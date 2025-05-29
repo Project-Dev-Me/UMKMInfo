@@ -1,5 +1,6 @@
 import { Home, Compass, Store, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLocation } from "wouter";
 
 interface BottomNavigationProps {
   activeTab: string;
@@ -17,8 +18,27 @@ export default function BottomNavigation({
   activeTab, 
   onTabChange 
 }: BottomNavigationProps) {
+  const [, setLocation] = useLocation();
+
   const handleTabClick = (tabId: string) => {
     console.log("Navigation to:", tabId);
+    
+    // Navigate to the appropriate route
+    switch (tabId) {
+      case "beranda":
+        setLocation("/");
+        break;
+      case "jelajah":
+        setLocation("/explore");
+        break;
+      case "umkm":
+        console.log("UMKM page not implemented yet");
+        break;
+      case "profil":
+        console.log("Profile page not implemented yet");
+        break;
+    }
+    
     if (onTabChange) {
       onTabChange(tabId);
     }
