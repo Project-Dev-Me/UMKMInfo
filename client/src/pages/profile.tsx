@@ -16,7 +16,7 @@ export default function Profile() {
   };
 
   const handleSettingsClick = () => {
-    console.log("Settings clicked");
+    setLocation("/settings");
   };
 
   const handleEditProfile = () => {

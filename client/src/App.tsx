@@ -9,7 +9,8 @@ import RegisterPage from "@/pages/register";
 import Home from "@/pages/home";
 import Explore from "@/pages/explore";
 import UmkmPage from "@/pages/umkm";
-import RegisterUmkmPage from "@/pages/register-umkm";
+import RegisterUmkmPage from './pages/register-umkm';
+import SettingsPage from './pages/settings';
 import Profile from "@/pages/profile";
 import DetailPage from "@/pages/detail";
 import NotFound from "@/pages/not-found";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/umkm" component={UmkmPage} />
       <Route path="/register-umkm" component={RegisterUmkmPage} />
       <Route path="/profile" component={Profile} />
+      <Route path="/settings" component={SettingsPage} />
       <Route component={NotFound} />
     </Switch>
   );
