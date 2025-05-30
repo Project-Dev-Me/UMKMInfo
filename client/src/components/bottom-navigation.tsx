@@ -32,10 +32,10 @@ export default function BottomNavigation({
         setLocation("/explore");
         break;
       case "umkm":
-        console.log("UMKM page not implemented yet");
+        setLocation("/umkm");
         break;
       case "profil":
-        console.log("Profile page not implemented yet");
+        setLocation("/profile");
         break;
     }
     
