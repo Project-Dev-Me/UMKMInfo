@@ -24,7 +24,7 @@ export const db = {
       .from('umkm_businesses')
       .select('*')
       .eq('is_popular', true)
-      .eq('status', 'active')
+      .eq('status', 'approved')
       .limit(10)
     
     if (error) throw error

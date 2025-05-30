@@ -1,4 +1,3 @@
-
 -- Create users table (extends auth.users)
 CREATE TABLE IF NOT EXISTS public.users (
   id UUID REFERENCES auth.users(id) PRIMARY KEY,
@@ -34,8 +33,8 @@ CREATE TABLE IF NOT EXISTS public.umkm_businesses (
   rating REAL DEFAULT 0,
   review_count INTEGER DEFAULT 0,
   status TEXT DEFAULT 'pending',
-  is_popular BOOLEAN DEFAULT FALSE,
   is_newly_joined BOOLEAN DEFAULT FALSE,
+  is_popular BOOLEAN DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
