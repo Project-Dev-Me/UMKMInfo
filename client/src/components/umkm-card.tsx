@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import type { UmkmBusiness } from "@shared/schema";
 
@@ -21,6 +22,7 @@ export default function UmkmCard({
   className = "" 
 }: UmkmCardProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
   const bookmarkMutation = useMutation({
@@ -43,7 +45,7 @@ export default function UmkmCard({
 
   const handleCardClick = () => {
     console.log("Opening detail page for:", business.name);
-    // In real app, this would navigate to detail page
+    setLocation(`/detail/${business.id}`);
   };
 
   if (variant === "horizontal") {

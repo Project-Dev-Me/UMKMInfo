@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useLocation } from "wouter";
 import BottomNavigation from "@/components/bottom-navigation";
 import type { UmkmBusiness } from "@shared/schema";
 
@@ -26,6 +27,7 @@ export default function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("semua");
   const [activeSort, setActiveSort] = useState("terdekat");
+  const [, setLocation] = useLocation();
 
   const { data: businesses = [], isLoading } = useQuery<UmkmBusiness[]>({
     queryKey: ["/api/umkm", activeCategory, searchQuery],
@@ -82,15 +84,17 @@ export default function Explore() {
     return descriptions[business.name as keyof typeof descriptions] || business.description || "Deskripsi usaha tidak tersedia";
   };
 
+  const [, setLocation] = useLocation();
+
   const handleCardClick = (business: UmkmBusiness) => {
     console.log("Opening detail page for:", business.name);
-    // In real app, this would navigate to detail page
+    setLocation(`/detail/${business.id}`);
   };
 
   const handleDetailClick = (e: React.MouseEvent, business: UmkmBusiness) => {
     e.stopPropagation();
     console.log("Lihat Detail clicked for:", business.name);
-    // In real app, this would navigate to detail page
+    setLocation(`/detail/${business.id}`);
   };
 
   return (
