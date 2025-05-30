@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = process.env.SUPABASE_URL || 'https://vpqjytpuudiqxrzeshuv.supabase.co'
@@ -12,5 +11,6 @@ export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
   }
 })
 
-// Regular client for user operations
-export const supabase = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwcWp5dHB1dWRpcXhyemVzaHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1NzQwNzksImV4cCI6MjA2NDE1MDA3OX0.qiZVA-gV6gjDPVQ3tt-xQxuWwupLsmNO1NARWLXulb8')
+// Client-side client for user operations  
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZwcWp5dHB1dWRpcXhyemVzaHV2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg1NzQwNzksImV4cCI6MjA2NDE1MDA3OX0.qiZVA-gV6gjDPVQ3tt-xQxuWwupLsmNO1NARWLXulb8'
+export const supabase = createClient(supabaseUrl, supabaseAnonKey)

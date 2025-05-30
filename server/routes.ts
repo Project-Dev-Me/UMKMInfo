@@ -1,4 +1,3 @@
-
 import { type Express } from "express";
 import { supabase, supabaseAdmin } from "./supabase";
 import { createServer } from "http";
@@ -13,7 +12,7 @@ export function registerRoutes(app: Express) {
         .from('umkm_businesses')
         .select('*')
         .eq('is_popular', true)
-        .eq('status', 'active')
+        .eq('status', 'approved')
         .limit(10);
 
       if (error) throw error;
@@ -99,11 +98,11 @@ export function registerRoutes(app: Express) {
   app.post("/api/umkm", async (req, res) => {
     try {
       const umkmData = req.body;
-      
+
       // Get user from auth header if available
       const authHeader = req.headers.authorization;
       let userId = null;
-      
+
       if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         const { data: { user }, error } = await supabase.auth.getUser(token);
@@ -263,7 +262,7 @@ export function registerRoutes(app: Express) {
 
       const token = authHeader.substring(7);
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
+
       if (authError || !user) {
         return res.status(401).json({ error: 'Invalid authentication' });
       }
@@ -299,7 +298,7 @@ export function registerRoutes(app: Express) {
 
       const token = authHeader.substring(7);
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
+
       if (authError || !user) {
         return res.status(401).json({ error: 'Invalid authentication' });
       }
@@ -332,7 +331,7 @@ export function registerRoutes(app: Express) {
 
       const token = authHeader.substring(7);
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
+
       if (authError || !user) {
         return res.status(401).json({ error: 'Invalid authentication' });
       }
@@ -367,7 +366,7 @@ export function registerRoutes(app: Express) {
 
       const token = authHeader.substring(7);
       const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-      
+
       if (authError || !user) {
         return res.status(401).json({ error: 'Invalid authentication' });
       }
