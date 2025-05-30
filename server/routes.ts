@@ -1,201 +1,390 @@
-import type { Express } from "express";
-import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { z } from "zod";
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  // Get all UMKM businesses with optional filtering
-  app.get("/api/umkm", async (req, res) => {
-    try {
-      const { category, search } = req.query;
-      const businesses = await storage.getUmkmBusinesses(
-        category as string,
-        search as string
-      );
-      res.json(businesses);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch UMKM businesses" });
-    }
-  });
+import { type Express } from "express";
+import { supabase, supabaseAdmin } from "./supabase";
+import { createServer } from "http";
 
-  // Get popular UMKM businesses
+export function registerRoutes(app: Express) {
+  const httpServer = createServer(app);
+
+  // Get popular UMKM
   app.get("/api/umkm/popular", async (req, res) => {
     try {
-      const businesses = await storage.getPopularUmkmBusinesses();
-      res.json(businesses);
+      const { data, error } = await supabase
+        .from('umkm_businesses')
+        .select('*')
+        .eq('is_popular', true)
+        .eq('status', 'active')
+        .limit(10);
+
+      if (error) throw error;
+      res.json(data || []);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch popular UMKM businesses" });
+      console.error('Error fetching popular UMKM:', error);
+      res.status(500).json({ error: 'Failed to fetch popular UMKM' });
     }
   });
 
-  // Get latest UMKM businesses
+  // Get latest UMKM
   app.get("/api/umkm/latest", async (req, res) => {
     try {
-      const businesses = await storage.getLatestUmkmBusinesses();
-      res.json(businesses);
+      const { data, error } = await supabase
+        .from('umkm_businesses')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      res.json(data || []);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch latest UMKM businesses" });
+      console.error('Error fetching latest UMKM:', error);
+      res.status(500).json({ error: 'Failed to fetch latest UMKM' });
     }
   });
 
-  // Get specific UMKM business by ID
+  // Get all UMKM
+  app.get("/api/umkm", async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from('umkm_businesses')
+        .select('*')
+        .eq('status', 'active')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      res.json(data || []);
+    } catch (error) {
+      console.error('Error fetching UMKM:', error);
+      res.status(500).json({ error: 'Failed to fetch UMKM' });
+    }
+  });
+
+  // Get UMKM by ID
   app.get("/api/umkm/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid business ID" });
-      }
-      
-      const business = await storage.getUmkmBusinessById(id);
-      if (!business) {
-        return res.status(404).json({ message: "Business not found" });
-      }
-      
-      res.json(business);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch business" });
-    }
-  });
+      const { id } = req.params;
+      const { data, error } = await supabase
+        .from('umkm_businesses')
+        .select(`
+          *,
+          reviews (
+            id,
+            rating,
+            comment,
+            created_at,
+            users (
+              full_name,
+              avatar_url
+            )
+          )
+        `)
+        .eq('id', id)
+        .single();
 
-  // Toggle bookmark for a business (simplified without authentication for now)
-  app.post("/api/bookmarks/toggle", async (req, res) => {
-    try {
-      const { userId, businessId } = req.body;
-      
-      if (!userId || !businessId) {
-        return res.status(400).json({ message: "User ID and Business ID are required" });
-      }
-      
-      const isBookmarked = await storage.toggleBookmark(userId, businessId);
-      res.json({ bookmarked: isBookmarked });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to toggle bookmark" });
-    }
-  });
-
-  // Get user bookmarks
-  app.get("/api/bookmarks/:userId", async (req, res) => {
-    try {
-      const userId = parseInt(req.params.userId);
-      if (isNaN(userId)) {
-        return res.status(400).json({ message: "Invalid user ID" });
-      }
-      
-      const bookmarks = await storage.getUserBookmarks(userId);
-      res.json(bookmarks);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch bookmarks" });
-    }
-  });
-
-  // Get reviews for a business
-  app.get("/api/reviews/:businessId", async (req, res) => {
-    try {
-      const businessId = parseInt(req.params.businessId);
-      if (isNaN(businessId)) {
-        return res.status(400).json({ message: "Invalid business ID" });
-      }
-      
-      // Mock reviews data - in real app this would fetch from database
-      const mockReviews = [
-        {
-          id: 1,
-          userName: "Ahmad",
-          userImage: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face",
-          rating: 5,
-          comment: "Produk sangat memuaskan, kualitas bagus, packaging rapi dan pengiriman cepat. Sangat recommended!",
-          date: "2024-01-15"
-        },
-        {
-          id: 2,
-          userName: "Siti",
-          userImage: "https://images.unsplash.com/photo-1494790108755-2616b332c2cb?w=100&h=100&fit=crop&crop=face",
-          rating: 4,
-          comment: "Batik motif tradisional yang sangat cantik. Kualitas kain bagus dan nyaman dipakai.",
-          date: "2024-01-10"
-        },
-        {
-          id: 3,
-          userName: "Budi",
-          userImage: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face",
-          rating: 5,
-          comment: "Pelayanan ramah, harga terjangkau dan kualitas produk bagus. Terima kasih!",
-          date: "2024-01-08"
-        },
-        {
-          id: 4,
-          userName: "Maya",
-          userImage: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face",
-          rating: 4,
-          comment: "Designnya unik dan berkualitas. Sangat puas dengan pembelian ini.",
-          date: "2024-01-05"
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return res.status(404).json({ error: 'UMKM not found' });
         }
-      ];
-      
-      res.json(mockReviews);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch reviews" });
-    }
-  });
-
-  // Add a new review
-  app.post("/api/reviews", async (req, res) => {
-    try {
-      const { businessId, rating, comment, userName } = req.body;
-      
-      if (!businessId || !rating || !comment || !userName) {
-        return res.status(400).json({ message: "Missing required fields" });
+        throw error;
       }
-      
-      // Mock response - in real app this would save to database
-      const newReview = {
-        id: Date.now(),
-        userName,
-        rating,
-        comment,
-        date: new Date().toISOString().split('T')[0]
-      };
-      
-      res.json(newReview);
+
+      res.json(data);
     } catch (error) {
-      res.status(500).json({ message: "Failed to add review" });
+      console.error('Error fetching UMKM detail:', error);
+      res.status(500).json({ error: 'Failed to fetch UMKM detail' });
     }
   });
 
-  // Register new UMKM
-  app.post("/api/umkm/register", async (req, res) => {
+  // Create new UMKM
+  app.post("/api/umkm", async (req, res) => {
     try {
-      const { name, category, description, location, contact, image } = req.body;
+      const umkmData = req.body;
       
-      if (!name || !category || !description || !location || !contact) {
-        return res.status(400).json({ message: "Missing required fields" });
+      // Get user from auth header if available
+      const authHeader = req.headers.authorization;
+      let userId = null;
+      
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.substring(7);
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (!error && user) {
+          userId = user.id;
+        }
       }
-      
-      // Mock response - in real app this would save to database
-      const newUmkm = {
-        id: Date.now(),
-        name,
-        category,
-        description,
-        location,
-        contact,
-        image: image || "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop",
-        rating: 0,
-        reviewCount: 0,
-        status: "active",
-        totalProducts: 0,
-        totalSales: 0,
-        isNewlyJoined: true,
-        isPopular: false
-      };
-      
-      // Save to localStorage simulation (in real app, save to database)
-      res.json(newUmkm);
+
+      const { data, error } = await supabase
+        .from('umkm_businesses')
+        .insert([{
+          ...umkmData,
+          owner_id: userId,
+          status: 'pending',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.status(201).json(data);
     } catch (error) {
-      res.status(500).json({ message: "Failed to register UMKM" });
+      console.error('Error creating UMKM:', error);
+      res.status(500).json({ error: 'Failed to create UMKM' });
     }
   });
 
-  const httpServer = createServer(app);
+  // Update UMKM
+  app.put("/api/umkm/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const { data, error } = await supabase
+        .from('umkm_businesses')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      console.error('Error updating UMKM:', error);
+      res.status(500).json({ error: 'Failed to update UMKM' });
+    }
+  });
+
+  // Delete UMKM
+  app.delete("/api/umkm/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const { error } = await supabase
+        .from('umkm_businesses')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      res.json({ message: 'UMKM deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting UMKM:', error);
+      res.status(500).json({ error: 'Failed to delete UMKM' });
+    }
+  });
+
+  // User authentication routes
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email, password, full_name, phone } = req.body;
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name,
+            phone
+          }
+        }
+      });
+
+      if (error) throw error;
+      res.status(201).json(data);
+    } catch (error) {
+      console.error('Error registering user:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      console.error('Error logging in:', error);
+      res.status(400).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/auth/logout", async (req, res) => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      res.json({ message: 'Logged out successfully' });
+    } catch (error) {
+      console.error('Error logging out:', error);
+      res.status(500).json({ error: 'Failed to log out' });
+    }
+  });
+
+  // Reviews routes
+  app.get("/api/umkm/:id/reviews", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { data, error } = await supabase
+        .from('reviews')
+        .select(`
+          *,
+          users (
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq('umkm_id', id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      res.json(data || []);
+    } catch (error) {
+      console.error('Error fetching reviews:', error);
+      res.status(500).json({ error: 'Failed to fetch reviews' });
+    }
+  });
+
+  app.post("/api/umkm/:id/reviews", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { rating, comment } = req.body;
+
+      // Get user from auth header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const token = authHeader.substring(7);
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return res.status(401).json({ error: 'Invalid authentication' });
+      }
+
+      const { data, error } = await supabase
+        .from('reviews')
+        .insert([{
+          umkm_id: id,
+          user_id: user.id,
+          rating,
+          comment,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.status(201).json(data);
+    } catch (error) {
+      console.error('Error creating review:', error);
+      res.status(500).json({ error: 'Failed to create review' });
+    }
+  });
+
+  // Bookmarks routes
+  app.get("/api/bookmarks", async (req, res) => {
+    try {
+      // Get user from auth header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const token = authHeader.substring(7);
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return res.status(401).json({ error: 'Invalid authentication' });
+      }
+
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select(`
+          *,
+          umkm_businesses (*)
+        `)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      res.json(data || []);
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error);
+      res.status(500).json({ error: 'Failed to fetch bookmarks' });
+    }
+  });
+
+  app.post("/api/bookmarks", async (req, res) => {
+    try {
+      const { umkm_id } = req.body;
+
+      // Get user from auth header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const token = authHeader.substring(7);
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return res.status(401).json({ error: 'Invalid authentication' });
+      }
+
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .insert([{
+          user_id: user.id,
+          umkm_id,
+          created_at: new Date().toISOString()
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+      res.status(201).json(data);
+    } catch (error) {
+      console.error('Error creating bookmark:', error);
+      res.status(500).json({ error: 'Failed to create bookmark' });
+    }
+  });
+
+  app.delete("/api/bookmarks/:umkmId", async (req, res) => {
+    try {
+      const { umkmId } = req.params;
+
+      // Get user from auth header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const token = authHeader.substring(7);
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      
+      if (authError || !user) {
+        return res.status(401).json({ error: 'Invalid authentication' });
+      }
+
+      const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('umkm_id', umkmId);
+
+      if (error) throw error;
+      res.json({ message: 'Bookmark removed successfully' });
+    } catch (error) {
+      console.error('Error removing bookmark:', error);
+      res.status(500).json({ error: 'Failed to remove bookmark' });
+    }
+  });
+
   return httpServer;
 }
