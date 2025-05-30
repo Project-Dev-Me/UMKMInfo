@@ -84,8 +84,6 @@ export default function Explore() {
     return descriptions[business.name as keyof typeof descriptions] || business.description || "Deskripsi usaha tidak tersedia";
   };
 
-  const [, setLocation] = useLocation();
-
   const handleCardClick = (business: UmkmBusiness) => {
     console.log("Opening detail page for:", business.name);
     setLocation(`/detail/${business.id}`);
