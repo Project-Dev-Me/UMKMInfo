@@ -162,6 +162,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Register new UMKM
+  app.post("/api/umkm/register", async (req, res) => {
+    try {
+      const { name, category, description, location, contact, image } = req.body;
+      
+      if (!name || !category || !description || !location || !contact) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      
+      // Mock response - in real app this would save to database
+      const newUmkm = {
+        id: Date.now(),
+        name,
+        category,
+        description,
+        location,
+        contact,
+        image: image || "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=800&h=600&fit=crop",
+        rating: 0,
+        reviewCount: 0,
+        status: "active",
+        totalProducts: 0,
+        totalSales: 0,
+        isNewlyJoined: true,
+        isPopular: false
+      };
+      
+      // Save to localStorage simulation (in real app, save to database)
+      res.json(newUmkm);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to register UMKM" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
