@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search, Bell } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import UmkmCard from "@/components/umkm-card";
 import BottomNavigation from "@/components/bottom-navigation";
+import LoadingScreen from "@/components/loading-screen";
 import type { UmkmBusiness } from "@shared/schema";
 
 const categories = [
@@ -17,6 +18,7 @@ const categories = [
 export default function Home() {
   const [activeCategory, setActiveCategory] = useState("semua");
   const [searchQuery, setSearchQuery] = useState("");
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const { data: popularUmkm = [], isLoading: isLoadingPopular } = useQuery<UmkmBusiness[]>({
     queryKey: ["/api/umkm/popular"],
@@ -25,6 +27,20 @@ export default function Home() {
   const { data: latestUmkm = [], isLoading: isLoadingLatest } = useQuery<UmkmBusiness[]>({
     queryKey: ["/api/umkm/latest"],
   });
+
+  // Show initial loading screen
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show loading screen on initial load
+  if (initialLoading || (isLoadingPopular && isLoadingLatest)) {
+    return <LoadingScreen message="Memuat data UMKM..." />;
+  }
 
   const handleNotificationClick = () => {
     console.log("Notifications clicked");

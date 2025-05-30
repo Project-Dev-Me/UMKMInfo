@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
 import { User, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import LoadingScreen from "@/components/loading-screen";
+import { db } from "@/lib/supabase";
 
 export default function RegisterPage() {
   const [, setLocation] = useLocation();
@@ -17,12 +19,13 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.fullName || !formData.email || !formData.password || !formData.confirmPassword) {
@@ -40,11 +43,32 @@ export default function RegisterPage() {
       return;
     }
 
-    // Simple validation for demo
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userEmail", formData.email);
-    localStorage.setItem("userName", formData.fullName);
-    setLocation("/");
+    setIsLoading(true);
+
+    try {
+      // Try to register with Supabase
+      const { user } = await db.signUp(formData.email, formData.password, {
+        full_name: formData.fullName
+      });
+      
+      if (user) {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userEmail", formData.email);
+        localStorage.setItem("userName", formData.fullName);
+        localStorage.setItem("userId", user.id);
+        setLocation("/");
+      }
+    } catch (error) {
+      console.log("Register error, using demo mode:", error);
+      // Fallback to demo mode
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userEmail", formData.email);
+      localStorage.setItem("userName", formData.fullName);
+      localStorage.setItem("userId", "demo-user");
+      setLocation("/");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleRegister = () => {
@@ -64,6 +88,11 @@ export default function RegisterPage() {
   const handleLoginClick = () => {
     setLocation("/login");
   };
+
+  // Show loading screen while registering
+  if (isLoading) {
+    return <LoadingScreen message="Mendaftarkan akun..." />;
+  }
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen px-6 py-8">

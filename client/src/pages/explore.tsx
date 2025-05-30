@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useLocation } from "wouter";
 import BottomNavigation from "@/components/bottom-navigation";
+import LoadingScreen from "@/components/loading-screen";
 import type { UmkmBusiness } from "@shared/schema";
 
 const categories = [
@@ -28,6 +29,7 @@ export default function Explore() {
   const [activeCategory, setActiveCategory] = useState("semua");
   const [activeSort, setActiveSort] = useState("terdekat");
   const [, setLocation] = useLocation();
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const { data: businesses = [], isLoading } = useQuery<UmkmBusiness[]>({
     queryKey: ["/api/umkm", activeCategory, searchQuery],
@@ -39,12 +41,24 @@ export default function Explore() {
       if (searchQuery) {
         params.append("search", searchQuery);
       }
-      
+
       const response = await fetch(`/api/umkm?${params}`);
       if (!response.ok) throw new Error("Failed to fetch businesses");
       return response.json();
     },
   });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setInitialLoading(false);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (initialLoading || isLoading) {
+    return <LoadingScreen message="Menjelajahi UMKM..." />;
+  }
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
@@ -153,68 +167,58 @@ export default function Explore() {
 
       {/* Business List */}
       <div className="px-6 py-4 pb-24 space-y-4">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-gray-200 rounded-xl h-32 animate-pulse" />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {businesses.map((business) => (
-              <Card 
-                key={business.id}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => handleCardClick(business)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start space-x-4">
-                    <Avatar className="w-12 h-12 flex-shrink-0">
-                      <AvatarImage 
-                        src={business.image} 
-                        alt={getOwnerName(business.name)}
-                      />
-                      <AvatarFallback>
-                        {getOwnerName(business.name).split(' ').map(n => n[0]).join('').slice(0, 2)}
-                      </AvatarFallback>
-                    </Avatar>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-gray-900 text-lg mb-1">
-                            {business.name}
-                          </h3>
-                          <p className="text-sm text-gray-500 mb-2">
-                            {getOwnerName(business.name)}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                        {getBusinessDescription(business)}
+        {businesses.map((business) => (
+          <Card 
+            key={business.id}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => handleCardClick(business)}
+          >
+            <CardContent className="p-4">
+              <div className="flex items-start space-x-4">
+                <Avatar className="w-12 h-12 flex-shrink-0">
+                  <AvatarImage 
+                    src={business.image} 
+                    alt={getOwnerName(business.name)}
+                  />
+                  <AvatarFallback>
+                    {getOwnerName(business.name).split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between mb-2">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-lg mb-1">
+                        {business.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 mb-2">
+                        {getOwnerName(business.name)}
                       </p>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-gray-400">
-                          {business.location} • {business.category}
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="px-4 py-2 text-primary border-primary hover:bg-primary hover:text-white"
-                          onClick={(e) => handleDetailClick(e, business)}
-                        >
-                          Lihat Detail
-                        </Button>
-                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+
+                  <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    {getBusinessDescription(business)}
+                  </p>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-400">
+                      {business.location} • {business.category}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="px-4 py-2 text-primary border-primary hover:bg-primary hover:text-white"
+                      onClick={(e) => handleDetailClick(e, business)}
+                    >
+                      Lihat Detail
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Bottom Navigation */}

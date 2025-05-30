@@ -15,19 +15,31 @@ import Profile from "@/pages/profile";
 import DetailPage from "@/pages/detail";
 import NotFound from "@/pages/not-found";
 
+// Protected Route Component
+function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true";
+  
+  if (!isLoggedIn) {
+    window.location.href = "/login";
+    return null;
+  }
+  
+  return <Component />;
+}
+
 function Router() {
   return (
     <Switch>
       <Route path="/splash" component={SplashPage} />
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
-      <Route path="/" component={Home} />
-      <Route path="/explore" component={Explore} />
-      <Route path="/detail/:id" component={DetailPage} />
-      <Route path="/umkm" component={UmkmPage} />
-      <Route path="/register-umkm" component={RegisterUmkmPage} />
-      <Route path="/profile" component={Profile} />
-      <Route path="/settings" component={SettingsPage} />
+      <Route path="/" component={() => <ProtectedRoute component={Home} />} />
+      <Route path="/explore" component={() => <ProtectedRoute component={Explore} />} />
+      <Route path="/detail/:id" component={() => <ProtectedRoute component={DetailPage} />} />
+      <Route path="/umkm" component={() => <ProtectedRoute component={UmkmPage} />} />
+      <Route path="/register-umkm" component={() => <ProtectedRoute component={RegisterUmkmPage} />} />
+      <Route path="/profile" component={() => <ProtectedRoute component={Profile} />} />
+      <Route path="/settings" component={() => <ProtectedRoute component={SettingsPage} />} />
       <Route component={NotFound} />
     </Switch>
   );

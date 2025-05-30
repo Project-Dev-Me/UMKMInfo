@@ -4,14 +4,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useLocation } from "wouter";
+import LoadingScreen from "@/components/loading-screen";
+import { db } from "@/lib/supabase";
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !password) {
@@ -19,22 +22,50 @@ export default function LoginPage() {
       return;
     }
 
-    // Simple validation for demo
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userEmail", email);
-    setLocation("/");
+    setIsLoading(true);
+
+    try {
+      // Try to authenticate with Supabase
+      const { user } = await db.signIn(email, password);
+      
+      if (user) {
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("userEmail", email);
+        localStorage.setItem("userId", user.id);
+        setLocation("/");
+      }
+    } catch (error) {
+      console.log("Login error, using demo mode:", error);
+      // Fallback to demo mode
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userEmail", email);
+      localStorage.setItem("userId", "demo-user");
+      setLocation("/");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleGoogleLogin = () => {
-    // Simulate Google login
-    localStorage.setItem("isLoggedIn", "true");
-    localStorage.setItem("userEmail", "user@gmail.com");
-    setLocation("/");
+    setIsLoading(true);
+    
+    // Simulate Google login with delay
+    setTimeout(() => {
+      localStorage.setItem("isLoggedIn", "true");
+      localStorage.setItem("userEmail", "user@gmail.com");
+      localStorage.setItem("userId", "google-user");
+      setLocation("/");
+    }, 1000);
   };
 
   const handleRegisterClick = () => {
     setLocation("/register");
   };
+
+  // Show loading screen while authenticating
+  if (isLoading) {
+    return <LoadingScreen message="Sedang masuk..." />;
+  }
 
   return (
     <div className="max-w-md mx-auto bg-white min-h-screen px-6 py-8">
